@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, createContext, useContext } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc, query, writeBatch, getDoc, Timestamp } from 'firebase/firestore';
+// 'setDoc' was removed from imports as it was unused
+import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, writeBatch, getDoc, Timestamp } from 'firebase/firestore';
 
 // --- Configuration & Constants ---
 const firebaseConfig = {
@@ -13,12 +14,12 @@ const firebaseConfig = {
     appId: "YOUR_APP_ID",
 };
 const appId = 'family-organizer-app-v12';
-const __initial_auth_token = null;
+// Unused constant removed: const __initial_auth_token = null;
 
-// --- Icon Components ---
-const PlusCircle = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>);
-const Trash2 = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>);
-const X = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
+// --- Icon Components (Commented out if unused) ---
+// const PlusCircle = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>);
+// const Trash2 = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>);
+// const X = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
 const PiggyBank = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 5c-1.5 0-2.8 1-3.5 2.5a4.3 4.3 0 0 0-6.9 0A3.5 3.5 0 0 0 5 5c-2 0-3.5 1.5-3.5 3.5 0 2.2 1.9 4 4.3 4.8"/><path d="M19.5 12.5c-2.4 0-4.4 1.5-5.2 3.5h-3.6c-.8-2-2.8-3.5-5.2-3.5C3.5 16 2 17.5 2 19.5S3.5 22 5.5 22h13c2 0 3.5-1.5 3.5-3.5s-1.5-3-3.5-3z"/><path d="M10 16.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5"/><path d="M16 5.5c-.3 0-.5.2-.5.5s.2.5.5.5.5-.2.5-.5-.2-.5-.5-.5z"/></svg>;
 const Calendar = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
 const Clock = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
@@ -61,11 +62,12 @@ function App() {
     const [deposits, setDeposits] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [savingsGoals, setSavingsGoals] = useState([]);
-    const [loans, setLoans] = useState([]);
-    const [appointments, setAppointments] = useState([]);
-    const [contacts, setContacts] = useState([]);
+    // Unused state variables. You can re-enable them when you build out the features.
+    // const [loans, setLoans] = useState([]);
+    // const [appointments, setAppointments] = useState([]);
+    // const [contacts, setContacts] = useState([]);
     const [joinInput, setJoinInput] = useState('');
-    const [copySuccess, setCopySuccess] = useState('');
+    // const [copySuccess, setCopySuccess] = useState('');
     const [modal, setModal] = useState({ isOpen: false, type: null, data: null });
     const totalCurrentSavings = useMemo(() => savingsGoals.reduce((sum, goal) => sum + parseFloat(goal.current || 0), 0), [savingsGoals]);
 
@@ -110,9 +112,9 @@ function App() {
                 createListener('deposits', setDeposits),
                 createListener('transactions', setTransactions),
                 createListener('savingsGoals', setSavingsGoals),
-                createListener('loans', setLoans),
-                createListener('appointments', setAppointments),
-                createListener('contacts', setContacts),
+                // createListener('loans', setLoans),
+                // createListener('appointments', setAppointments),
+                // createListener('contacts', setContacts),
             ];
             return () => unsubscribers.forEach(unsub => unsub());
         }
@@ -131,72 +133,75 @@ function App() {
         }
     };
 
-    const copyToClipboard = () => {
-        const textArea = document.createElement("textarea");
-        textArea.value = budgetID;
-        document.body.appendChild(textArea);
-        textArea.select();
-        try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(budgetID).then(() => {
-                    setCopySuccess('Copied!');
-                    setTimeout(() => setCopySuccess(''), 2000);
-                }).catch(err => {
-                    console.error("Failed to copy using clipboard API:", err);
-                    setCopySuccess('Failed to copy');
-                });
-            } else {
-                document.execCommand('copy');
-                setCopySuccess('Copied!');
-                setTimeout(() => setCopySuccess(''), 2000);
-            }
-        } catch (err) { setCopySuccess('Failed to copy'); }
-        document.body.removeChild(textArea);
-    };
+    // This function is defined but not attached to any UI element yet.
+    // const copyToClipboard = () => {
+    //     const textArea = document.createElement("textarea");
+    //     textArea.value = budgetID;
+    //     document.body.appendChild(textArea);
+    //     textArea.select();
+    //     try {
+    //         if (navigator.clipboard && navigator.clipboard.writeText) {
+    //             navigator.clipboard.writeText(budgetID).then(() => {
+    //                 setCopySuccess('Copied!');
+    //                 setTimeout(() => setCopySuccess(''), 2000);
+    //             }).catch(err => {
+    //                 console.error("Failed to copy using clipboard API:", err);
+    //                 setCopySuccess('Failed to copy');
+    //             });
+    //         } else {
+    //             document.execCommand('copy');
+    //             setCopySuccess('Copied!');
+    //             setTimeout(() => setCopySuccess(''), 2000);
+    //         }
+    //     } catch (err) { setCopySuccess('Failed to copy'); }
+    //     document.body.removeChild(textArea);
+    // };
 
     const getBasePath = () => `artifacts/${appId}/public/data/budgets/${budgetID}`;
 
-    const handleSaveItem = async (type, data) => {
-        if (!db || !budgetID) return;
-        const { id, ...itemData } = data;
-        let collectionName = `${type}s`;
-        if (['bill', 'deposit', 'expense'].includes(type)) {
-            collectionName = 'transactions';
-        }
-        if (id) {
-            await updateDoc(doc(db, getBasePath(), collectionName, id), itemData);
-        } else {
-            const docRef = await addDoc(collection(db, getBasePath(), collectionName), { ...itemData, type });
-            if (type === 'appointment') {
-                if (itemData.cost && parseFloat(itemData.cost) > 0) {
-                    await addDoc(collection(db, getBasePath(), 'transactions'), {
-                        name: `Expense: ${itemData.name}`,
-                        amount: parseFloat(itemData.cost),
-                        date: itemData.date,
-                        type: 'expense',
-                        linkedAppointmentId: docRef.id
-                    });
-                }
-                if (itemData.contactName || itemData.contactPhone || itemData.address) {
-                    await addDoc(collection(db, getBasePath(), 'contacts'), {
-                        name: itemData.contactName || itemData.name,
-                        phone: itemData.contactPhone || '',
-                        address: itemData.address || '',
-                        notes: `From appointment: ${itemData.name}`,
-                        linkedAppointmentId: docRef.id
-                    });
-                }
-            }
-        }
-        setModal({ isOpen: false, type: null, data: null });
-    };
+    // This function is defined but not called from the UI yet.
+    // const handleSaveItem = async (type, data) => {
+    //     if (!db || !budgetID) return;
+    //     const { id, ...itemData } = data;
+    //     let collectionName = `${type}s`;
+    //     if (['bill', 'deposit', 'expense'].includes(type)) {
+    //         collectionName = 'transactions';
+    //     }
+    //     if (id) {
+    //         await updateDoc(doc(db, getBasePath(), collectionName, id), itemData);
+    //     } else {
+    //         const docRef = await addDoc(collection(db, getBasePath(), collectionName), { ...itemData, type });
+    //         if (type === 'appointment') {
+    //             if (itemData.cost && parseFloat(itemData.cost) > 0) {
+    //                 await addDoc(collection(db, getBasePath(), 'transactions'), {
+    //                     name: `Expense: ${itemData.name}`,
+    //                     amount: parseFloat(itemData.cost),
+    //                     date: itemData.date,
+    //                     type: 'expense',
+    //                     linkedAppointmentId: docRef.id
+    //                 });
+    //             }
+    //             if (itemData.contactName || itemData.contactPhone || itemData.address) {
+    //                 await addDoc(collection(db, getBasePath(), 'contacts'), {
+    //                     name: itemData.contactName || itemData.name,
+    //                     phone: itemData.contactPhone || '',
+    //                     address: itemData.address || '',
+    //                     notes: `From appointment: ${itemData.name}`,
+    //                     linkedAppointmentId: docRef.id
+    //                 });
+    //             }
+    //         }
+    //     }
+    //     setModal({ isOpen: false, type: null, data: null });
+    // };
 
-    const handleDeleteItem = async (type, id) => {
-        if (!db || !budgetID) return;
-        const collectionName = ['bill', 'deposit', 'expense'].includes(type) ? 'transactions' : `${type}s`;
-        await deleteDoc(doc(db, getBasePath(), collectionName, id));
-        setModal({ isOpen: false, type: null, data: null });
-    };
+    // This function is defined but not called from the UI yet.
+    // const handleDeleteItem = async (type, id) => {
+    //     if (!db || !budgetID) return;
+    //     const collectionName = ['bill', 'deposit', 'expense'].includes(type) ? 'transactions' : `${type}s`;
+    //     await deleteDoc(doc(db, getBasePath(), collectionName, id));
+    //     setModal({ isOpen: false, type: null, data: null });
+    // };
 
     const handleLoadSampleData = async () => {
         if (!db || !budgetID) return;
@@ -350,7 +355,6 @@ function App() {
                 eventsByDate[dateStr].push(t);
             });
 
-            // CORRECTED LINE: Removed the invalid non-breaking space character
             let runningBalance = totalCurrentSavings;
 
             const days = [];
@@ -359,6 +363,8 @@ function App() {
                 const dateStr = date.toDateString();
                 const dayEvents = (eventsByDate[dateStr] || []).sort((a, b) => a.name.localeCompare(b.name));
                 
+                // The linter warns about functions in a loop, but this is safe here.
+                // eslint-disable-next-line no-loop-func
                 dayEvents.forEach(event => {
                     const amount = parseFloat(event.amount || 0);
                     if (event.type === 'deposit') runningBalance += amount;
@@ -380,7 +386,6 @@ function App() {
 
         const isDataEmpty = bills.length === 0 && deposits.length === 0 && transactions.length === 0;
 
-        // CORRECTED LINE: Fixed mixed tab/space indentation
         return (
             <div>
                 <header className="mb-6 flex justify-between items-center">
@@ -426,11 +431,9 @@ function App() {
     const SavingsPage = () => (
         <div>
             <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Savings</h1>
-            {/* Savings content will go here */}
         </div>
     );
     
-    // Add other page components as needed
     const LoansPage = () => <div>Loans Page</div>;
     const SchedulePage = () => <div>Schedule Page</div>;
     const SettingsPage = () => <div>Settings Page</div>;
