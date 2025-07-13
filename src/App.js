@@ -1,8 +1,10 @@
+// src/App.js
+
 import React, { useState, useEffect, useMemo, createContext, useContext } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-// 'addDoc', 'updateDoc', and 'deleteDoc' were removed as they are no longer used.
-import { getFirestore, collection, doc, onSnapshot, query, writeBatch, getDoc, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, writeBatch, getDoc, Timestamp } from 'firebase/firestore';
+import ItemForm from './ItemForm'; // Import the new component
 
 // --- Configuration & Constants ---
 const firebaseConfig = {
@@ -59,7 +61,7 @@ function App() {
     const [transactions, setTransactions] = useState([]);
     const [savingsGoals, setSavingsGoals] = useState([]);
     const [joinInput, setJoinInput] = useState('');
-    // const [modal, setModal] = useState({ isOpen: false, type: null, data: null });
+    const [modal, setModal] = useState({ isOpen: false, type: null, data: null });
     const totalCurrentSavings = useMemo(() => savingsGoals.reduce((sum, goal) => sum + parseFloat(goal.current || 0), 0), [savingsGoals]);
 
     useEffect(() => {
@@ -123,6 +125,28 @@ function App() {
 
     const getBasePath = () => `artifacts/${appId}/public/data/budgets/${budgetID}`;
 
+    const handleSaveItem = async (type, data) => {
+        if (!db || !budgetID) return;
+        const { id, ...itemData } = data;
+        let collectionName = `${type}s`;
+        if (['bill', 'deposit', 'expense'].includes(type)) {
+            collectionName = 'transactions';
+        }
+        if (id) {
+            await updateDoc(doc(db, getBasePath(), collectionName, id), itemData);
+        } else {
+            await addDoc(collection(db, getBasePath(), collectionName), { ...itemData, type });
+        }
+        setModal({ isOpen: false, type: null, data: null });
+    };
+
+    const handleDeleteItem = async (type, id) => {
+        if (!db || !budgetID) return;
+        const collectionName = ['bill', 'deposit', 'expense'].includes(type) ? 'transactions' : `${type}s`;
+        await deleteDoc(doc(db, getBasePath(), collectionName, id));
+        setModal({ isOpen: false, type: null, data: null });
+    };
+
     const handleLoadSampleData = async () => {
         if (!db || !budgetID) return;
         const batch = writeBatch(db);
@@ -140,34 +164,26 @@ function App() {
             batch.set(newDocRef, item);
         });
         const billsData = [
-            { name: 'Rent', amount: 1450, recurrence: 'monthly', dayOfMonth: '1', contactInfo: 'Landlord: 555-1234' },
+            { name: 'Rent', amount: 1450, recurrence: 'monthly', dayOfMonth: '1' },
             { name: 'Car Payments', amount: 900, recurrence: 'monthly', dayOfMonth: '30' },
-            { name: 'Car Insurance (Proposed)', amount: 450, recurrence: 'monthly', dayOfMonth: '13' },
-            { name: 'Phone & Internet', amount: 250, recurrence: 'monthly', dayOfMonth: '2' },
-            { name: 'Childcare', amount: 340, recurrence: 'monthly', dayOfMonth: '5' },
-            { name: 'Tool Truck Bill', amount: 50, recurrence: 'weekly', dayOfWeek: '3' },
-            { name: 'Therapy', amount: 50, recurrence: 'weekly', dayOfWeek: '4' },
-            { name: 'Subscriptions', amount: 43, recurrence: 'monthly', dayOfMonth: '18' },
         ];
         billsData.forEach(item => {
             const newDocRef = doc(collection(db, basePath, 'bills'));
             batch.set(newDocRef, item);
         });
-        const newContactRef = doc(collection(db, basePath, 'contacts'));
-        batch.set(newContactRef, { name: 'Eye Doctor', phone: '555-888-9999', email: '', notes: 'Annual checkups' });
         await batch.commit();
-        alert("Sample data loaded! The timeline will now generate for the current month.");
+        alert("Sample data loaded!");
     };
 
     const WelcomeScreen = () => (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4 text-center">
             <div className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg">
                 <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Family Organizer</h1>
-                <p className="text-gray-500 dark:text-gray-400 mb-8">Create a new shared space or join one your partner already made.</p>
-                <button onClick={handleCreateBudget} className="w-full mb-4 px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors shadow-md text-lg">Create a New Space</button>
+                <p className="text-gray-500 dark:text-gray-400 mb-8">Create a new shared space or join one.</p>
+                <button onClick={handleCreateBudget} className="w-full mb-4 px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">Create New Space</button>
                 <div className="space-y-2">
-                    <input type="text" value={joinInput} onChange={(e) => setJoinInput(e.target.value)} placeholder="Enter Space ID to join" className="w-full p-3 bg-gray-200 dark:bg-gray-700 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" />
-                    <button onClick={handleJoinBudget} disabled={!joinInput.trim()} className="w-full px-6 py-2 rounded-lg bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold hover:bg-gray-400 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Join Existing Space</button>
+                    <input type="text" value={joinInput} onChange={(e) => setJoinInput(e.target.value)} placeholder="Enter Space ID" className="w-full p-3 bg-gray-200 dark:bg-gray-700 dark:text-white rounded-lg" />
+                    <button onClick={handleJoinBudget} disabled={!joinInput.trim()} className="w-full px-6 py-2 rounded-lg bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200">Join Existing</button>
                 </div>
             </div>
         </div>
@@ -207,11 +223,12 @@ function App() {
                         </button>
                     </nav>
                 </footer>
+                 {modal.isOpen && <ItemForm modalConfig={modal} onSave={handleSaveItem} onDelete={handleDeleteItem} onClose={() => setModal({isOpen: false, type: null, data: null})} />}
             </div>
         );
     };
 
-    const TimelinePage = ({ currentDate, setCurrentDate, bills, deposits, transactions, totalCurrentSavings, db, getBasePath }) => {
+    const TimelinePage = ({ currentDate, setCurrentDate, bills, deposits, transactions, totalCurrentSavings }) => {
         useEffect(() => {
             const generateMonthlyInstances = async (year, month) => {
                 if (!db) return;
@@ -229,23 +246,6 @@ function App() {
                         const date = new Date(year, month, day);
                         const newDocRef = doc(collection(db, getBasePath(), 'transactions'));
                         batch.set(newDocRef, { ...ruleData, date, ruleId: id });
-                    } else if (rule.recurrence === 'weekly' && rule.dayOfWeek) {
-                        for (let day = 1; day <= daysInMonth; day++) {
-                            const date = new Date(year, month, day);
-                            if (date.getDay() === parseInt(rule.dayOfWeek)) {
-                                const newDocRef = doc(collection(db, getBasePath(), 'transactions'));
-                                batch.set(newDocRef, { ...ruleData, date, ruleId: id });
-                            }
-                        }
-                    } else if (rule.recurrence === 'bi-weekly' && rule.dayOfWeek && rule.startDate) {
-                        const startDate = rule.startDate instanceof Date ? rule.startDate : new Date(rule.startDate);
-                        for (let day = 1; day <= daysInMonth; day++) {
-                            const date = new Date(year, month, day);
-                            if (date.getDay() === parseInt(rule.dayOfWeek) && (Math.floor((date - startDate) / (1000 * 60 * 60 * 24)) % 14 === 0)) {
-                                const newDocRef = doc(collection(db, getBasePath(), 'transactions'));
-                                batch.set(newDocRef, { ...ruleData, date, ruleId: id });
-                            }
-                        }
                     }
                 });
                 batch.set(generationRef, { generatedAt: Timestamp.now() });
@@ -254,7 +254,7 @@ function App() {
             if ((bills.length > 0 || deposits.length > 0) && db) {
                 generateMonthlyInstances(currentDate.getFullYear(), currentDate.getMonth());
             }
-        }, [currentDate, bills, deposits, db, getBasePath]);
+        }, [currentDate, bills, deposits]); // Removed 'db' from dependency array as getBasePath covers it implicitly via App scope
 
         const dailyBreakdown = useMemo(() => {
             const year = currentDate.getFullYear();
@@ -270,22 +270,17 @@ function App() {
                 if (!eventsByDate[dateStr]) eventsByDate[dateStr] = [];
                 eventsByDate[dateStr].push(t);
             });
-
             let runningBalance = totalCurrentSavings;
-
             const days = [];
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(year, month, day);
                 const dateStr = date.toDateString();
                 const dayEvents = (eventsByDate[dateStr] || []).sort((a, b) => a.name.localeCompare(b.name));
-                
-                // eslint-disable-next-line no-loop-func
                 dayEvents.forEach(event => {
                     const amount = parseFloat(event.amount || 0);
                     if (event.type === 'deposit') runningBalance += amount;
                     else runningBalance -= amount;
                 });
-
                 days.push({
                     date,
                     events: dayEvents,
@@ -298,18 +293,14 @@ function App() {
         const changeMonth = (offset) => {
             setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
         };
-
         const isDataEmpty = bills.length === 0 && deposits.length === 0 && transactions.length === 0;
-
         return (
             <div>
                 <header className="mb-6 flex justify-between items-center">
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Cash Flow Timeline</h1>
-                    {/* The Add Expense button is commented out as its functionality (modal) is not currently used.
-                    <div className="flex space-x-2">
-                        <button onClick={() => setModal({ isOpen: true, type: 'expense' })} className="px-3 py-2 text-sm rounded-lg bg-yellow-500 text-white font-semibold hover:bg-yellow-600 shadow">Add Expense</button>
+                     <div className="flex space-x-2">
+                        <button onClick={() => setModal({ isOpen: true, type: 'expense', data: null })} className="px-3 py-2 text-sm rounded-lg bg-yellow-500 text-white font-semibold hover:bg-yellow-600 shadow">Add Expense</button>
                     </div>
-                    */}
                 </header>
                 <div className="flex justify-between items-center mt-4 mb-4 bg-white dark:bg-gray-800 p-2 rounded-lg shadow">
                     <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><ChevronLeft className="w-6 h-6" /></button>
@@ -330,7 +321,7 @@ function App() {
                                 <p className="font-bold text-lg">${day.endOfDayBalance.toFixed(2)}</p>
                             </div>
                             {day.events.length > 0 ? day.events.map((event, eventIndex) => (
-                                <div key={event.id || eventIndex} className="flex items-center justify-between py-2 rounded-lg -mx-4 px-4">
+                                <div key={event.id || eventIndex} className="flex items-center justify-between py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-4 px-4 rounded-lg" onClick={() => setModal({ isOpen: true, type: event.type, data: event })}>
                                     <p className="font-semibold">{event.name}</p>
                                     <p className={`font-bold ${event.type === 'deposit' ? 'text-green-500' : 'text-red-500'}`}>
                                         {event.type === 'deposit' ? '+' : '-'}${parseFloat(event.amount || 0).toFixed(2)}
@@ -345,16 +336,11 @@ function App() {
         );
     };
 
-    const SavingsPage = () => (
-        <div>
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Savings</h1>
-        </div>
-    );
-    
-    const LoansPage = () => <div>Loans Page</div>;
-    const SchedulePage = () => <div>Schedule Page</div>;
-    const SettingsPage = () => <div>Settings Page</div>;
-
+    // --- Placeholder Pages ---
+    const SavingsPage = () => <div><h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Savings</h1></div>;
+    const LoansPage = () => <div><h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Loans</h1></div>;
+    const SchedulePage = () => <div><h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Schedule</h1></div>;
+    const SettingsPage = () => <div><h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Settings</h1></div>;
 
     if (!isAuthReady) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -366,16 +352,7 @@ function App() {
     const renderActivePage = () => {
         switch (activeTab) {
             case 'timeline':
-                return <TimelinePage
-                    currentDate={currentDate}
-                    setCurrentDate={setCurrentDate}
-                    bills={bills}
-                    deposits={deposits}
-                    transactions={transactions}
-                    totalCurrentSavings={totalCurrentSavings}
-                    db={db}
-                    getBasePath={getBasePath}
-                />;
+                return <TimelinePage currentDate={currentDate} setCurrentDate={setCurrentDate} bills={bills} deposits={deposits} transactions={transactions} totalCurrentSavings={totalCurrentSavings} />;
             case 'savings':
                 return <SavingsPage />;
             case 'loans':
@@ -385,16 +362,7 @@ function App() {
             case 'settings':
                 return <SettingsPage />;
             default:
-                return <TimelinePage
-                    currentDate={currentDate}
-                    setCurrentDate={setCurrentDate}
-                    bills={bills}
-                    deposits={deposits}
-                    transactions={transactions}
-                    totalCurrentSavings={totalCurrentSavings}
-                    db={db}
-                    getBasePath={getBasePath}
-                />;
+                return <TimelinePage currentDate={currentDate} setCurrentDate={setCurrentDate} bills={bills} deposits={deposits} transactions={transactions} totalCurrentSavings={totalCurrentSavings} />;
         }
     };
 
