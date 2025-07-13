@@ -424,4 +424,44 @@ function App() {
     };
 
     const isDataEmpty = bills.length === 0 && deposits.length === 0 && transactions.length === 0;
-
+	    return (
+        <div>
+            <header className="mb-6 flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Cash Flow Timeline</h1>
+                <div className="flex space-x-2">
+                    <button onClick={() => setModal({isOpen: true, type: 'expense'})} className="px-3 py-2 text-sm rounded-lg bg-yellow-500 text-white font-semibold hover:bg-yellow-600 shadow">Add Expense</button>
+                </div>
+            </header>
+            <div className="flex justify-between items-center mt-4 mb-4 bg-white dark:bg-gray-800 p-2 rounded-lg shadow">
+                <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><ChevronLeft className="w-6 h-6"/></button>
+                <h2 className="text-xl font-semibold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
+                <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><ChevronRight className="w-6 h-6"/></button>
+            </div>
+            <div className="space-y-2">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                    <div className="flex justify-between items-center">
+                        <span className="font-medium text-gray-600 dark:text-gray-400">Starting Balance for {currentDate.toLocaleString('default', { month: 'long' })}</span>
+                        <span className="font-bold text-lg text-gray-800 dark:text-gray-200">${parseFloat(totalCurrentSavings || 0).toFixed(2)}</span>
+                    </div>
+                </div>
+                {dailyBreakdown.map((day, index) => (
+                    <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                        <div className="flex justify-between items-center border-b pb-2 mb-2 border-gray-200 dark:border-gray-700">
+                             <h3 className="font-bold text-gray-700 dark:text-gray-300">{day.date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</h3>
+                             <p className="font-bold text-lg">${day.endOfDayBalance.toFixed(2)}</p>
+                        </div>
+                        {day.events.length > 0 ? day.events.map((event, eventIndex) => (
+                            <div key={event.id || eventIndex} className="flex items-center justify-between py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-4 px-4 rounded-lg" onClick={() => setModal({isOpen: true, type: event.type, data: event})}>
+                                <p className="font-semibold">{event.name}</p>
+                                <p className={`font-bold ${event.type === 'deposit' ? 'text-green-500' : 'text-red-500'}`}>
+                                    {event.type === 'deposit' ? '+' : '-'}${parseFloat(event.amount || 0).toFixed(2)}
+                                </p>
+                            </div>
+                        )) : <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">No transactions</p>}
+                    </div>
+                ))}
+                 {isDataEmpty && <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow"><h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">Your Timeline is Empty</h3><p className="text-gray-400 mt-2">Load the sample plan to get started.</p><button onClick={handleLoadSampleData} className="mt-6 px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow">Load Our Plan</button></div>}
+            </div>
+        </div>
+    );
+  }; // This is the closing brace for the TimelinePage component.
