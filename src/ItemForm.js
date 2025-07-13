@@ -26,7 +26,6 @@ const ItemForm = ({ modalConfig, onSave, onDelete, onClose }) => {
             recurrence: 'monthly',
             dayOfMonth: '1',
             dayOfWeek: '0',
-            // Add other potential fields with defaults
         };
         setFormData(data ? { ...data, date: formatDateForInput(data.date) } : { ...defaults, type });
     }, [data, type]);
@@ -80,7 +79,6 @@ const ItemForm = ({ modalConfig, onSave, onDelete, onClose }) => {
                         </div>
                     )}
                     
-                    {/* Buttons */}
                     <div className="flex justify-between items-center pt-4">
                         <div>
                             {data && (
