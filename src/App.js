@@ -464,7 +464,6 @@ function App() {
             </div>
         </div>
     );
-  }; // This is the closing brace for the TimelinePage component.
-  const SavingsPage = () => { // <--- This line should directly follow line 467
-469      return (
-// ... rest of SavingsPage and other components ...
+  };
+  const SavingsPage = () => { 
+    return ( 
