@@ -1,21 +1,19 @@
 import React, { useState, useEffect, useMemo, createContext, useContext } from 'react';
 import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 // eslint-disable-next-line no-unused-vars
 import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc, query, writeBatch, getDoc, Timestamp } from 'firebase/firestore';
-// ...
-// eslint-disable-next-line no-unused-vars
-const Trash2 = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>);
 
 // --- Configuration & Constants ---
 // Your Firebase project configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY", // <--- YOU WILL REPLACE THIS LATER
+  apiKey: "YOUR_API_KEY", // <--- YOU WILL REPLACE THIS LATER (from Firebase Console -> Project settings -> General -> Web app)
   authDomain: "budgeting-65f97.firebaseapp.com",
   projectId: "budgeting-65f97",
   storageBucket: "budgeting-65f97.appspot.com",
   messagingSenderId: "446678123087",
-  appId: "YOUR_APP_ID", // <--- YOU WILL REPLACE THIS LATER
-  measurementId: "YOUR_MEASUREMENT_ID" // <--- YOU WILL REPLACE THIS LATER IF YOU USE GOOGLE ANALYTICS
+  appId: "YOUR_APP_ID", // <--- YOU WILL REPLACE THIS LATER (from Firebase Console -> Project settings -> General -> Web app)
+  // measurementId: "YOUR_MEASUREMENT_ID" // <--- OPTIONAL: UNCOMMENT & REPLACE IF USING GOOGLE ANALYTICS (from Firebase Console -> Project settings -> Integrations -> Google Analytics)
 };
 const appId = 'family-organizer-app-v12'; // Keeping this as a default from your code
 const __initial_auth_token = null; // We'll handle authentication properly, so set this to null for now
@@ -27,7 +25,8 @@ const X = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24"
 const Copy = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>);
 const PiggyBank = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 5c-1.5 0-2.8 1-3.5 2.5a4.3 4.3 0 0 0-6.9 0A3.5 3.5 0 0 0 5 5c-2 0-3.5 1.5-3.5 3.5 0 2.2 1.9 4 4.3 4.8"/><path d="M19.5 12.5c-2.4 0-4.4 1.5-5.2 3.5h-3.6c-.8-2-2.8-3.5-5.2-3.5C3.5 16 2 17.5 2 19.5S3.5 22 5.5 22h13c2 0 3.5-1.5 3.5-3.5s-1.5-3-3.5-3z"/><path d="M10 16.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5"/><path d="M16 5.5c-.3 0-.5.2-.5.5s.2.5.5.5.5-.2.5-.5-.2-.5-.5-.5z"/></svg>;
 const Calendar = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
-//const Users = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
+// eslint-disable-next-line no-unused-vars
+// Removed the unused 'Users' icon entirely as it wasn't used anywhere in the code.
 const Clock = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
 const ChevronLeft = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"></polyline></svg>;
 const ChevronRight = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"></polyline></svg>;
@@ -89,22 +88,27 @@ function App() {
 
   // --- Firebase Initialization & Auth ---
   useEffect(() => {
-    if (Object.keys(firebaseConfig).length > 0) {
+    // Only initialize Firebase if firebaseConfig is not empty
+    if (Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey !== "YOUR_API_KEY") {
       const app = initializeApp(firebaseConfig);
       const authInstance = getAuth(app);
       setDb(getFirestore(app));
       onAuthStateChanged(authInstance, async (user) => {
         if (!user) {
           try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-              await signInWithCustomToken(authInstance, __initial_auth_token);
-            } else { await signInAnonymously(authInstance); }
+            // __initial_auth_token is always null based on our definition
+            // So this path will always lead to signInAnonymously
+            await signInAnonymously(authInstance);
           } catch (error) { console.error("Error signing in:", error); }
         }
         setIsAuthReady(true);
       });
-    } else { setIsAuthReady(true); }
-  }, []);
+    } else {
+        // If config is missing or placeholder, indicate auth is ready but app won't function fully
+        console.warn("Firebase config is missing or incomplete. Some app features may not work.");
+        setIsAuthReady(true);
+    }
+  }, []); // Empty dependency array means this runs once on mount
 
   // --- Data Fetching (based on budgetID) ---
   useEffect(() => {
@@ -142,7 +146,8 @@ function App() {
 
   // --- Handlers ---
   const handleCreateBudget = () => {
-    const newID = crypto.randomUUID();
+    // Check for crypto.randomUUID support or fall back to a simpler ID
+    const newID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     localStorage.setItem('budgetID', newID);
     setBudgetID(newID);
   };
@@ -160,9 +165,20 @@ function App() {
     document.body.appendChild(textArea);
     textArea.select();
     try {
-        document.execCommand('copy');
-        setCopySuccess('Copied!');
-        setTimeout(() => setCopySuccess(''), 2000);
+        // Use modern clipboard API if available, fallback to execCommand
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(budgetID).then(() => {
+                setCopySuccess('Copied!');
+                setTimeout(() => setCopySuccess(''), 2000);
+            }).catch(err => {
+                console.error("Failed to copy using clipboard API:", err);
+                setCopySuccess('Failed to copy');
+            });
+        } else {
+            document.execCommand('copy');
+            setCopySuccess('Copied!');
+            setTimeout(() => setCopySuccess(''), 2000);
+        }
     } catch (err) { setCopySuccess('Failed to copy'); }
     document.body.removeChild(textArea);
   };
@@ -409,295 +425,3 @@ function App() {
 
     const isDataEmpty = bills.length === 0 && deposits.length === 0 && transactions.length === 0;
 
-    return (
-        <div>
-            <header className="mb-6 flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Cash Flow Timeline</h1>
-                <div className="flex space-x-2">
-                    <button onClick={() => setModal({isOpen: true, type: 'expense'})} className="px-3 py-2 text-sm rounded-lg bg-yellow-500 text-white font-semibold hover:bg-yellow-600 shadow">Add Expense</button>
-                </div>
-            </header>
-            <div className="flex justify-between items-center mt-4 mb-4 bg-white dark:bg-gray-800 p-2 rounded-lg shadow">
-                <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><ChevronLeft className="w-6 h-6"/></button>
-                <h2 className="text-xl font-semibold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
-                <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><ChevronRight className="w-6 h-6"/></button>
-            </div>
-            <div className="space-y-2">
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-                    <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-600 dark:text-gray-400">Starting Balance for {currentDate.toLocaleString('default', { month: 'long' })}</span>
-                        <span className="font-bold text-lg text-gray-800 dark:text-gray-200">${parseFloat(totalCurrentSavings || 0).toFixed(2)}</span>
-                    </div>
-                </div>
-                {dailyBreakdown.map((day, index) => (
-                    <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-                        <div className="flex justify-between items-center border-b pb-2 mb-2 border-gray-200 dark:border-gray-700">
-                             <h3 className="font-bold text-gray-700 dark:text-gray-300">{day.date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</h3>
-                             <p className="font-bold text-lg">${day.endOfDayBalance.toFixed(2)}</p>
-                        </div>
-                        {day.events.length > 0 ? day.events.map((event, eventIndex) => (
-                            <div key={event.id || eventIndex} className="flex items-center justify-between py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-4 px-4 rounded-lg" onClick={() => setModal({isOpen: true, type: event.type, data: event})}>
-                                <p className="font-semibold">{event.name}</p>
-                                <p className={`font-bold ${event.type === 'deposit' ? 'text-green-500' : 'text-red-500'}`}>
-                                    {event.type === 'deposit' ? '+' : '-'}${parseFloat(event.amount || 0).toFixed(2)}
-                                </p>
-                            </div>
-                        )) : <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">No transactions</p>}
-                    </div>
-                ))}
-                 {isDataEmpty && <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow"><h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">Your Timeline is Empty</h3><p className="text-gray-400 mt-2">Load the sample plan to get started.</p><button onClick={handleLoadSampleData} className="mt-6 px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow">Load Our Plan</button></div>}
-            </div>
-        </div>
-    );
-  };
-  
-  const SavingsPage = () => {
-    return (
-        <div>
-            <header className="mb-6 flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Savings Goals</h1>
-                <button onClick={() => setModal({isOpen: true, type: 'savingsGoal'})} className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow"><PlusCircle className="w-5 h-5" /><span>Add Goal</span></button>
-            </header>
-            <div className="space-y-4">
-                {savingsGoals.length > 0 ? savingsGoals.map(goal => {
-                    const progress = goal.goal > 0 ? (goal.current / goal.goal) * 100 : 0;
-                    return (
-                        <div key={goal.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow cursor-pointer" onClick={() => setModal({isOpen: true, type: 'savingsGoal', data: goal})}>
-                            <div className="flex justify-between items-center mb-2">
-                                <p className="font-bold text-lg">{goal.name}</p>
-                                <p className="font-semibold">${parseFloat(goal.current || 0).toFixed(2)} / ${parseFloat(goal.goal || 0).toFixed(2)}</p>
-                            </div>
-                             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                                <div className="bg-blue-600 h-4 rounded-full" style={{ width: `${progress > 100 ? 100 : progress}%` }}></div>
-                            </div>
-                        </div>
-                    )
-                }) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">No savings goals yet.</p>}
-            </div>
-        </div>
-    );
-  };
-
-  const LoansPage = () => {
-      return (
-        <div>
-            <header className="mb-6 flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Loans</h1>
-                <button onClick={() => setModal({isOpen: true, type: 'loan'})} className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow"><PlusCircle className="w-5 h-5" /><span>Add Loan</span></button>
-            </header>
-            <div className="space-y-4">
-                {loans.length > 0 ? loans.map(loan => (
-                    <div key={loan.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow cursor-pointer" onClick={() => setModal({isOpen: true, type: 'loan', data: loan})}>
-                        <p className="font-bold text-lg">{loan.name}</p>
-                        <p className="text-gray-600 dark:text-gray-400">Balance: ${parseFloat(loan.principal || 0).toFixed(2)}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Interest Rate: {loan.interestRate}% | Min. Payment: ${parseFloat(loan.minimumPayment || 0).toFixed(2)}</p>
-                    </div>
-                )) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">No loans to track.</p>}
-            </div>
-        </div>
-      );
-  };
-  
-  const SchedulePage = () => {
-    const sortedAppointments = [...appointments].sort((a,b) => new Date(a.date) - new Date(b.date));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-	const allContacts = useMemo(() => {
-        const fromBills = bills.filter(b => b.contactInfo).map(b => ({name: `${b.name} (Bill)`, phone: b.contactInfo, isFromBill: true}));
-        return [...fromBills, ...contacts].sort((a,b) => a.name.localeCompare(b.name));
-    }, [bills, contacts]);
-
-    return (
-      <div>
-        <div className="mb-8">
-            <header className="mb-6 flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Appointments</h1>
-                <button onClick={() => setModal({isOpen: true, type: 'appointment'})} className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow"><PlusCircle className="w-5 h-5" /><span>Add</span></button>
-            </header>
-            <div className="space-y-4">
-                {sortedAppointments.length > 0 ? sortedAppointments.map(item => (
-                    <div key={item.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700" onClick={() => setModal({isOpen: true, type: 'appointment', data: item})}>
-                        <p className="font-bold text-lg">{item.name}</p>
-                        <p className="text-gray-600 dark:text-gray-400">{new Date(item.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} at {item.time}</p>
-                        {item.address && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Location: {item.address}</p>}
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{item.notes}</p>
-                    </div>
-                )) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">No appointments scheduled.</p>}
-            </div>
-        </div>
-        <div className="mt-12">
-            <header className="mb-6 flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Contacts</h1>
-                <button onClick={() => setModal({isOpen: true, type: 'contact'})} className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow"><PlusCircle className="w-5 h-5" /><span>Add</span></button>
-            </header>
-            <div className="space-y-4">
-                {allContacts.map((item, index) => (
-                    <div key={item.id || index} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700" onClick={() => !item.isFromBill && setModal({isOpen: true, type: 'contact', data: item})}>
-                        <p className="font-bold text-lg">{item.name}</p>
-                        <p className="text-gray-600 dark:text-gray-400">{item.phone}</p>
-                        <p className="text-gray-600 dark:text-gray-400">{item.email}</p>
-                        {item.address && <p className="text-gray-600 dark:text-gray-400">{item.address}</p>}
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{item.notes}</p>
-                    </div>
-                ))}
-                {allContacts.length === 0 && <p className="text-center text-gray-500 dark:text-gray-400 py-8">No contacts found.</p>}
-            </div>
-        </div>
-      </div>
-    );
-  };
-
-  const SettingsPage = () => {
-      const { theme, setTheme } = useContext(ThemeContext);
-      return (
-        <div>
-            <header className="mb-6"><h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Settings</h1></header>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
-                <div className="flex justify-between items-center">
-                    <span className="font-semibold text-lg">Theme</span>
-                    <select value={theme} onChange={(e) => setTheme(e.target.value)} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600">
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="mountain">Mountain Dawn</option>
-                        <option value="ocean">Oceanic Calm</option>
-                    </select>
-                </div>
-                 <div className="mt-8">
-                    <h2 className="text-xl font-bold mb-2">Budget ID</h2>
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">Share this ID with your partner to sync your budgets.</p>
-                     <div className="flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
-                        <span className="font-semibold text-gray-600 dark:text-gray-300 break-all">{budgetID}</span>
-                        <button onClick={copyToClipboard} className="text-blue-500 hover:text-blue-700 flex-shrink-0"><Copy className="w-5 h-5"/></button>
-                        {copySuccess && <span className="text-green-600 text-xs">{copySuccess}</span>}
-                    </div>
-                </div>
-            </div>
-        </div>
-      );
-  };
-
-  const ItemForm = ({ modalConfig, onSave, onDelete, onClose }) => {
-    const { type, data } = modalConfig;
-    const [formData, setFormData] = useState(data || {});
-    const [isSaving, setIsSaving] = useState(false);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({...prev, [name]: value}));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsSaving(true);
-        const dataToSave = {...formData};
-        if(dataToSave.date) dataToSave.date = new Date(dataToSave.date);
-        if(dataToSave.startDate) dataToSave.startDate = new Date(dataToSave.startDate);
-        await onSave(type, dataToSave);
-        setIsSaving(false);
-    };
-
-    const renderFields = () => {
-        switch(type) {
-            case 'bill':
-            case 'deposit':
-            case 'expense':
-                 return (
-                    <>
-                        <input name="name" value={formData.name || ''} onChange={handleChange} placeholder="Name" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required/>
-                        <input type="number" name="amount" value={formData.amount || ''} onChange={handleChange} placeholder="Amount" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required step="0.01"/>
-                        <input type="date" name="date" value={formData.date ? (formData.date instanceof Date ? formData.date.toISOString().split('T')[0] : formData.date) : new Date().toISOString().split('T')[0]} onChange={handleChange} className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required/>
-                         {type === 'bill' && <textarea name="contactInfo" value={formData.contactInfo || ''} onChange={handleChange} placeholder="Contact Info (Phone, etc.)" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg h-24"/>}
-                    </>
-                );
-            case 'savingsGoal':
-                return (
-                    <>
-                        <input name="name" value={formData.name || ''} onChange={handleChange} placeholder="Goal Name (e.g., Emergency Fund)" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required/>
-                        <input type="number" name="goal" value={formData.goal || ''} onChange={handleChange} placeholder="Goal Amount" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required step="0.01"/>
-                        <input type="number" name="current" value={formData.current || ''} onChange={handleChange} placeholder="Current Amount" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required step="0.01"/>
-                    </>
-                );
-            case 'loan':
-                return (
-                    <>
-                        <input name="name" value={formData.name || ''} onChange={handleChange} placeholder="Loan Name (e.g., Car Loan)" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required/>
-                        <input type="number" name="principal" value={formData.principal || ''} onChange={handleChange} placeholder="Current Principal Balance" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required step="0.01"/>
-                        <input type="number" name="interestRate" value={formData.interestRate || ''} onChange={handleChange} placeholder="Interest Rate (%)" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required step="0.01"/>
-                        <input type="number" name="minimumPayment" value={formData.minimumPayment || ''} onChange={handleChange} placeholder="Minimum Monthly Payment" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required step="0.01"/>
-                    </>
-                );
-            case 'appointment':
-                return (
-                    <>
-                        <input name="name" value={formData.name || ''} onChange={handleChange} placeholder="Appointment Title" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required/>
-                        <input type="date" name="date" value={formData.date ? (formData.date instanceof Date ? formData.date.toISOString().split('T')[0] : formData.date) : ''} onChange={handleChange} className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required/>
-                        <input type="time" name="time" value={formData.time || ''} onChange={handleChange} className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg"/>
-                        <input type="number" name="cost" value={formData.cost || ''} onChange={handleChange} placeholder="Optional Cost" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" step="0.01"/>
-                        <textarea name="address" value={formData.address || ''} onChange={handleChange} placeholder="Location / Address" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg h-24"/>
-                        <textarea name="notes" value={formData.notes || ''} onChange={handleChange} placeholder="Notes" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg h-24"/>
-                        <div className="pt-2">
-                            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">Contact Info (Optional)</h3>
-                            <input name="contactName" value={formData.contactName || ''} onChange={handleChange} placeholder="Contact Name" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg mb-2"/>
-                            <input type="tel" name="contactPhone" value={formData.contactPhone || ''} onChange={handleChange} placeholder="Contact Phone" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg"/>
-                        </div>
-                    </>
-                );
-            case 'contact':
-                return (
-                    <>
-                        <input name="name" value={formData.name || ''} onChange={handleChange} placeholder="Contact Name" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg" required/>
-                        <input type="tel" name="phone" value={formData.phone || ''} onChange={handleChange} placeholder="Phone Number" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg"/>
-                        <input type="email" name="email" value={formData.email || ''} onChange={handleChange} placeholder="Email Address" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg"/>
-                        <textarea name="address" value={formData.address || ''} onChange={handleChange} placeholder="Address" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg h-24"/>
-                        <textarea name="notes" value={formData.notes || ''} onChange={handleChange} placeholder="Notes" className="w-full p-3 bg-gray-100 dark:bg-gray-700 dark:text-white rounded-lg h-24"/>
-                    </>
-                );
-            default: return null;
-        }
-    }
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-lg relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"><X className="w-6 h-6" /></button>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6 capitalize">{data?.id ? 'Edit' : 'Add'} {type}</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {renderFields()}
-                    <div className="flex justify-between items-center pt-4">
-                        {data?.id && <button type="button" onClick={() => onDelete(type, data.id)} className="px-6 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700">Delete</button>}
-                        <div className="flex-grow"></div>
-                        <div className="flex space-x-3">
-                            <button type="button" onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-300 dark:hover:bg-gray-500">Cancel</button>
-                            <button type="submit" disabled={isSaving} className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50">
-                                {isSaving ? 'Saving...' : 'Save'}
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-  };
-
-
-  // --- Main Render Logic ---
-  if (!isAuthReady) return <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900"><div className="text-xl font-semibold text-gray-600 dark:text-gray-300">Initializing Secure Session...</div></div>;
-  if (!budgetID) return <WelcomeScreen />;
-
-  return (
-    <MainLayout>
-      {activeTab === 'timeline' && <TimelinePage currentDate={currentDate} setCurrentDate={setCurrentDate} bills={bills} deposits={deposits} transactions={transactions} totalCurrentSavings={totalCurrentSavings} db={db} getBasePath={getBasePath} />}
-      {activeTab === 'savings' && <SavingsPage savingsGoals={savingsGoals} />}
-      {activeTab === 'loans' && <LoansPage loans={loans} transactions={transactions} />}
-      {activeTab === 'schedule' && <SchedulePage appointments={appointments} contacts={contacts} bills={bills} />}
-      {activeTab === 'settings' && <SettingsPage />}
-    </MainLayout>
-  );
-}
-
-export default function ThemedApp() {
-    return (
-        <ThemeProvider>
-            <App />
-        </ThemeProvider>
-    )
-}
