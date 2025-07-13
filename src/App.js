@@ -276,8 +276,6 @@ function App() {
                 const date = new Date(year, month, day);
                 const dateStr = date.toDateString();
                 const dayEvents = (eventsByDate[dateStr] || []).sort((a, b) => a.name.localeCompare(b.name));
-                
-                // This is the fix for the no-loop-func warning
                 // eslint-disable-next-line no-loop-func
                 dayEvents.forEach(event => {
                     const amount = parseFloat(event.amount || 0);
@@ -343,7 +341,55 @@ function App() {
     const SavingsPage = () => <div><h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Savings</h1></div>;
     const LoansPage = () => <div><h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Loans</h1></div>;
     const SchedulePage = () => <div><h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Schedule</h1></div>;
-    const SettingsPage = () => <div><h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Settings</h1></div>;
+    
+    // --- NEW: A functional Settings Page ---
+    const SettingsPage = () => {
+        const { theme, setTheme } = useContext(ThemeContext);
+
+        const handleLeaveBudget = () => {
+            if (window.confirm("Are you sure you want to leave this space? This will clear your local data and you will need to rejoin.")) {
+                localStorage.removeItem('budgetID');
+                window.location.reload();
+            }
+        };
+
+        return (
+            <div className="space-y-6">
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Settings</h1>
+                
+                {/* Theme Selector Card */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                    <h2 className="text-xl font-semibold mb-3 text-gray-700 dark:text-gray-300">Theme</h2>
+                    <select 
+                        value={theme} 
+                        onChange={(e) => setTheme(e.target.value)}
+                        className="w-full p-2 rounded-md border-gray-300 dark:bg-gray-700 dark:border-gray-600"
+                    >
+                        {Object.entries(themes).map(([key, value]) => (
+                            <option key={key} value={key}>{value.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Data Management Card */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                    <h2 className="text-xl font-semibold mb-3 text-gray-700 dark:text-gray-300">Data Management</h2>
+                    <button 
+                        onClick={handleLoadSampleData}
+                        className="w-full mb-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                        Load Sample Data
+                    </button>
+                    <button 
+                        onClick={handleLeaveBudget}
+                        className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                        Leave Shared Space
+                    </button>
+                </div>
+            </div>
+        );
+    };
 
     if (!isAuthReady) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
