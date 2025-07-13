@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, createContext, useContext } from '
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, writeBatch, getDoc, Timestamp } from 'firebase/firestore';
-import ItemForm from './ItemForm'; // Import the new component
+import ItemForm from './ItemForm';
 
 // --- Configuration & Constants ---
 const firebaseConfig = {
@@ -254,7 +254,7 @@ function App() {
             if ((bills.length > 0 || deposits.length > 0) && db) {
                 generateMonthlyInstances(currentDate.getFullYear(), currentDate.getMonth());
             }
-        }, [currentDate, bills, deposits]); // Removed 'db' from dependency array as getBasePath covers it implicitly via App scope
+        }, [currentDate, bills, deposits]);
 
         const dailyBreakdown = useMemo(() => {
             const year = currentDate.getFullYear();
@@ -276,6 +276,9 @@ function App() {
                 const date = new Date(year, month, day);
                 const dateStr = date.toDateString();
                 const dayEvents = (eventsByDate[dateStr] || []).sort((a, b) => a.name.localeCompare(b.name));
+                
+                // This is the fix for the no-loop-func warning
+                // eslint-disable-next-line no-loop-func
                 dayEvents.forEach(event => {
                     const amount = parseFloat(event.amount || 0);
                     if (event.type === 'deposit') runningBalance += amount;
