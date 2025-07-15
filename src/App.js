@@ -7,13 +7,13 @@ import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc
 import ItemForm from './ItemForm';
 
 // --- Configuration & Constants ---
-const firebaseConfig = {
-    apiKey: "AIzaSyAGrd2a6Ku6YibxTFBFKQZ-DKdGVNJqt_Y",
-  authDomain: "budgeting-65f97.firebaseapp.com",
-  projectId: "budgeting-65f97",
-  storageBucket: "budgeting-65f97.firebasestorage.app",
-  messagingSenderId: "446678123087",
-  appId: "1:446678123087:web:72564080989a72f4bce03a",
+    const firebaseConfig = {
+    apiKey: process.env.REACT_APP_API_KEY,
+    authDomain: process.env.REACT_APP_AUTH_DOMAIN,
+    projectId: process.env.REACT_APP_PROJECT_ID,
+    storageBucket: process.env.REACT_APP_STORAGE_BUCKET,
+    messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
+    appId: process.env.REACT_APP_APP_ID,
 };
 const appId = 'family-organizer-app-v12';
 
@@ -242,38 +242,38 @@ function App() {
             </div>
         );
     };
-
-    const TimelinePage = ({ currentDate, setCurrentDate, bills, deposits, transactions, totalCurrentSavings }) => {
-        useEffect(() => {
-            const generateMonthlyInstances = async (year, month) => {
-                if (!db) return;
-                const budgetDocRef = getBudgetDocRef(db, budgetID); // Use the new helper here too
-                const monthId = `${year}-${month}`;
-                const generationRef = doc(collection(budgetDocRef, 'generatedMonths'), monthId); // Correct Firestore pathing
-                const generationDoc = await getDoc(generationRef);
-                if (generationDoc.exists()) return;
-                const batch = writeBatch(db);
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
-                const allRules = [...bills.map(b => ({ ...b, type: 'bill' })), ...deposits.map(d => ({ ...d, type: 'deposit' }))];
-                allRules.forEach(rule => {
-                    const { id, ...ruleData } = rule;
-                    if (rule.recurrence === 'monthly' && rule.dayOfMonth) {
-                        const day = Math.min(parseInt(rule.dayOfMonth), daysInMonth);
-                        const date = new Date(year, month, day);
-                        const newDocRef = doc(collection(budgetDocRef, 'transactions')); // Correct Firestore pathing
-                        batch.set(newDocRef, { ...ruleData, date, ruleId: id });
-                    }
-                });
-                batch.set(generationRef, { generatedAt: Timestamp.now() });
-                await batch.commit();
-            };
-            // Added budgetID to dependencies here since getBudgetDocRef depends on it.
-            // Also ensuring db and budgetID are available before attempting to generate.
-			// eslint-disable-next-line react-hooks/exhaustive-deps
-            if ((bills.length > 0 || deposits.length > 0) && db && budgetID) { 
-                generateMonthlyInstances(currentDate.getFullYear(), currentDate.getMonth());
-            }
-        }, [currentDate, bills, deposits, db, budgetID]); // Added db, budgetID to dependencies
+            const TimelinePage = ({ currentDate, setCurrentDate, bills, deposits, transactions, totalCurrentSavings }) => {
+    useEffect(() => {
+        const generateMonthlyInstances = async (year, month) => {
+            if (!db) return; // db is accessed from App's outer scope
+            const budgetDocRef = getBudgetDocRef(db, budgetID); // db and budgetID are accessed from App's outer scope
+            const monthId = `${year}-${month}`;
+            const generationRef = doc(collection(budgetDocRef, 'generatedMonths'), monthId);
+            const generationDoc = await getDoc(generationRef);
+            if (generationDoc.exists()) return;
+            const batch = writeBatch(db);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const allRules = [...bills.map(b => ({ ...b, type: 'bill' })), ...deposits.map(d => ({ ...d, type: 'deposit' }))];
+            allRules.forEach(rule => {
+                const { id, ...ruleData } = rule;
+                if (rule.recurrence === 'monthly' && rule.dayOfMonth) {
+                    const day = Math.min(parseInt(rule.dayOfMonth), daysInMonth);
+                    const date = new Date(year, month, day);
+                    const newDocRef = doc(collection(budgetDocRef, 'transactions'));
+                    batch.set(newDocRef, { ...ruleData, date, ruleId: id });
+                }
+            });
+            batch.set(generationRef, { generatedAt: Timestamp.now() });
+            await batch.commit();
+        };
+        // Added budgetID to dependencies here since getBudgetDocRef depends on it.
+        // Also ensuring db and budgetID are available before attempting to generate.
+        if ((bills.length > 0 || deposits.length > 0) && db && budgetID) {
+            generateMonthlyInstances(currentDate.getFullYear(), currentDate.getMonth());
+        }
+    // THIS IS THE LINE! It should be immediately above the closing curly brace and opening square bracket.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentDate, bills, deposits, db, budgetID]); // Added db, budgetID to dependencies
 
         const dailyBreakdown = useMemo(() => {
             const year = currentDate.getFullYear();

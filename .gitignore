@@ -12,3 +12,8 @@ firebase-debug.log*
 # OS specific
 .DS_Store
 Thumbs.db
+# Dependencies
+/node_modules
+
+# Local Environment Variables
+.env
