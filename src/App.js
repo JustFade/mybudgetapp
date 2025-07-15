@@ -8,12 +8,12 @@ import ItemForm from './ItemForm';
 
 // --- Configuration & Constants ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "budgeting-65f97.firebaseapp.com",
-    projectId: "budgeting-65f97",
-    storageBucket: "budgeting-65f97.appspot.com",
-    messagingSenderId: "446678123087",
-    appId: "YOUR_APP_ID",
+    apiKey: "AIzaSyAGrd2a6Ku6YibxTFBFKQZ-DKdGVNJqt_Y",
+  authDomain: "budgeting-65f97.firebaseapp.com",
+  projectId: "budgeting-65f97",
+  storageBucket: "budgeting-65f97.firebasestorage.app",
+  messagingSenderId: "446678123087",
+  appId: "1:446678123087:web:72564080989a72f4bce03a",
 };
 const appId = 'family-organizer-app-v12';
 
@@ -65,7 +65,7 @@ function App() {
     const totalCurrentSavings = useMemo(() => savingsGoals.reduce((sum, goal) => sum + parseFloat(goal.current || 0), 0), [savingsGoals]);
 
     useEffect(() => {
-        if (Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+        if (Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey !== "YOUR_ACTUAL_API_KEY_HERE") { // Updated condition
             const app = initializeApp(firebaseConfig);
             const authInstance = getAuth(app);
             setDb(getFirestore(app));
@@ -83,11 +83,20 @@ function App() {
         }
     }, []);
 
+    // NEW HELPER FUNCTION: This will correctly point to your specific budget's data
+    const getBudgetDocRef = (dbInstance, budgetId) => {
+        // This builds the path segment by segment:
+        // collection('artifacts') -> document(appId) -> collection('public') -> document('data') -> collection('budgets') -> document(budgetId)
+        return doc(dbInstance, 'artifacts', appId, 'public', 'data', 'budgets', budgetId);
+    };
+
     useEffect(() => {
         if (isAuthReady && db && budgetID) {
-            const basePath = `artifacts/${appId}/public/data/budgets/${budgetID}`;
+            // NO LONGER NEED `basePath` STRING HERE!
             const createListener = (collectionName, setState) => {
-                return onSnapshot(query(collection(db, basePath, collectionName)), snap => {
+                // Correctly gets the subcollection reference using getBudgetDocRef
+                const collectionRef = collection(getBudgetDocRef(db, budgetID), collectionName);
+                return onSnapshot(query(collectionRef), snap => {
                     const data = snap.docs.map(d => {
                         const docData = d.data();
                         Object.keys(docData).forEach(key => {
@@ -123,44 +132,50 @@ function App() {
         }
     };
 
-    const getBasePath = () => `artifacts/${appId}/public/data/budgets/${budgetID}`;
+    // Removed the old `getBasePath` function, it's replaced by `getBudgetDocRef`
 
     const handleSaveItem = async (type, data) => {
         if (!db || !budgetID) return;
+        const budgetDocRef = getBudgetDocRef(db, budgetID); // Use the new helper
         const { id, ...itemData } = data;
         let collectionName = `${type}s`;
         if (['bill', 'deposit', 'expense'].includes(type)) {
             collectionName = 'transactions';
         }
+        const targetCollectionRef = collection(budgetDocRef, collectionName); // Correct Firestore pathing
         if (id) {
-            await updateDoc(doc(db, getBasePath(), collectionName, id), itemData);
+            await updateDoc(doc(targetCollectionRef, id), itemData); // Correct Firestore pathing
         } else {
-            await addDoc(collection(db, getBasePath(), collectionName), { ...itemData, type });
+            await addDoc(targetCollectionRef, { ...itemData, type }); // Correct Firestore pathing
         }
         setModal({ isOpen: false, type: null, data: null });
     };
 
     const handleDeleteItem = async (type, id) => {
         if (!db || !budgetID) return;
+        const budgetDocRef = getBudgetDocRef(db, budgetID); // Use the new helper
         const collectionName = ['bill', 'deposit', 'expense'].includes(type) ? 'transactions' : `${type}s`;
-        await deleteDoc(doc(db, getBasePath(), collectionName, id));
+        const targetCollectionRef = collection(budgetDocRef, collectionName); // Correct Firestore pathing
+        await deleteDoc(doc(targetCollectionRef, id)); // Correct Firestore pathing
         setModal({ isOpen: false, type: null, data: null });
     };
 
     const handleLoadSampleData = async () => {
         if (!db || !budgetID) return;
         const batch = writeBatch(db);
-        const basePath = getBasePath();
-        const newSavingsGoalRef = doc(collection(db, basePath, 'savingsGoals'));
+        const budgetDocRef = getBudgetDocRef(db, budgetID); // Use the new helper
+        // Removed `const basePath = getBasePath();`
+
+        const newSavingsGoalRef = doc(collection(budgetDocRef, 'savingsGoals')); // Correct Firestore pathing
         batch.set(newSavingsGoalRef, { name: "Emergency Fund", goal: 1000, current: -46.64 });
-        const newLoanRef = doc(collection(db, basePath, 'loans'));
+        const newLoanRef = doc(collection(budgetDocRef, 'loans')); // Correct Firestore pathing
         batch.set(newLoanRef, { name: "Car Loan", principal: 15000, interestRate: 5.5, minimumPayment: 350 });
         const depositsData = [
             { name: "Your Paycheck", amount: 750, recurrence: 'weekly', dayOfWeek: '3' },
             { name: "Wife's Paycheck", amount: 936, recurrence: 'bi-weekly', dayOfWeek: '5', startDate: new Date('2024-07-12') }
         ];
         depositsData.forEach(item => {
-            const newDocRef = doc(collection(db, basePath, 'deposits'));
+            const newDocRef = doc(collection(budgetDocRef, 'deposits')); // Correct Firestore pathing
             batch.set(newDocRef, item);
         });
         const billsData = [
@@ -168,7 +183,7 @@ function App() {
             { name: 'Car Payments', amount: 900, recurrence: 'monthly', dayOfMonth: '30' },
         ];
         billsData.forEach(item => {
-            const newDocRef = doc(collection(db, basePath, 'bills'));
+            const newDocRef = doc(collection(budgetDocRef, 'bills')); // Correct Firestore pathing
             batch.set(newDocRef, item);
         });
         await batch.commit();
@@ -232,8 +247,9 @@ function App() {
         useEffect(() => {
             const generateMonthlyInstances = async (year, month) => {
                 if (!db) return;
+                const budgetDocRef = getBudgetDocRef(db, budgetID); // Use the new helper here too
                 const monthId = `${year}-${month}`;
-                const generationRef = doc(db, getBasePath(), 'generatedMonths', monthId);
+                const generationRef = doc(collection(budgetDocRef, 'generatedMonths'), monthId); // Correct Firestore pathing
                 const generationDoc = await getDoc(generationRef);
                 if (generationDoc.exists()) return;
                 const batch = writeBatch(db);
@@ -244,17 +260,19 @@ function App() {
                     if (rule.recurrence === 'monthly' && rule.dayOfMonth) {
                         const day = Math.min(parseInt(rule.dayOfMonth), daysInMonth);
                         const date = new Date(year, month, day);
-                        const newDocRef = doc(collection(db, getBasePath(), 'transactions'));
+                        const newDocRef = doc(collection(budgetDocRef, 'transactions')); // Correct Firestore pathing
                         batch.set(newDocRef, { ...ruleData, date, ruleId: id });
                     }
                 });
                 batch.set(generationRef, { generatedAt: Timestamp.now() });
                 await batch.commit();
             };
-            if ((bills.length > 0 || deposits.length > 0) && db) {
+            // Added budgetID to dependencies here since getBudgetDocRef depends on it.
+            // Also ensuring db and budgetID are available before attempting to generate.
+            if ((bills.length > 0 || deposits.length > 0) && db && budgetID) { 
                 generateMonthlyInstances(currentDate.getFullYear(), currentDate.getMonth());
             }
-        }, [currentDate, bills, deposits]);
+        }, [currentDate, bills, deposits, db, budgetID]); // Added db, budgetID to dependencies
 
         const dailyBreakdown = useMemo(() => {
             const year = currentDate.getFullYear();

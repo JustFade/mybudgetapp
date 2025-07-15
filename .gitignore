@@ -1,0 +1,14 @@
+# Node modules
+node_modules/
+.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# Build artifacts
+build/
+dist/
+.firebase/
+firebase-debug.log*
+# OS specific
+.DS_Store
+Thumbs.db
