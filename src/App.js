@@ -269,6 +269,7 @@ function App() {
             };
             // Added budgetID to dependencies here since getBudgetDocRef depends on it.
             // Also ensuring db and budgetID are available before attempting to generate.
+			// eslint-disable-next-line react-hooks/exhaustive-deps
             if ((bills.length > 0 || deposits.length > 0) && db && budgetID) { 
                 generateMonthlyInstances(currentDate.getFullYear(), currentDate.getMonth());
             }
